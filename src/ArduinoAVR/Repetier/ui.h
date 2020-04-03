@@ -158,7 +158,9 @@
 #define UI_ACTION_ZPOSITION_FAST_NOTEST 1110
 #define UI_ACTION_Z_BABYSTEPS           1111
 #define UI_ACTION_MAX_INACTIVE          1112
-
+////////////////////////////////////////////////////////////
+#define UI_ACTION_BUILD_PLATE           1113
+///////////////////////////////////////////////////////
 #define UI_ACTION_MENU_XPOS             4000
 #define UI_ACTION_MENU_YPOS             4001
 #define UI_ACTION_MENU_ZPOS             4002
@@ -210,6 +212,7 @@ typedef struct {
   int numEntries;
   const UIMenuEntry * const * entries;
 } const UIMenu;
+
 extern const int8_t encoder_table[16] PROGMEM ;
 
 //#ifdef COMPILE_I2C_DRIVER
@@ -230,13 +233,13 @@ extern const int8_t encoder_table[16] PROGMEM ;
 
 //extern const int matrixActions[] PROGMEM;
 // Key codes
-#define UI_KEYS_INIT_CLICKENCODER_LOW(pinA,pinB) SET_INPUT(pinA);SET_INPUT(pinB); PULLUP(pinA,HIGH);PULLUP(pinB,HIGH);
+#define UI_KEYS_INIT_CLICKENCODER_LOW(pinA,pinB) SET_INPUT(29);SET_INPUT(30); PULLUP(29,HIGH);PULLUP(30,HIGH);
 #define UI_KEYS_INIT_BUTTON_LOW(pin) SET_INPUT(pin);PULLUP(pin,HIGH);
 #define UI_KEYS_INIT_CLICKENCODER_HIGH(pinA,pinB) SET_INPUT(pinA);SET_INPUT(pinB); PULLUP(pinA,LOW);PULLUP(pinB,LOW);
 #define UI_KEYS_INIT_BUTTON_HIGH(pin) SET_INPUT(pin);PULLUP(pin,LOW);
 
 #define UI_KEYS_CLICKENCODER_LOW(pinA,pinB)  uid.encoderLast = (uid.encoderLast << 2) & 0x0F;if (!READ(pinA)) uid.encoderLast |=2;if (!READ(pinB)) uid.encoderLast |=1; uid.encoderPos += pgm_read_byte(&encoder_table[uid.encoderLast]);
-#define UI_KEYS_CLICKENCODER_LOW_REV(pinA,pinB)  uid.encoderLast = (uid.encoderLast << 2) & 0x0F;if (!READ(pinA)) uid.encoderLast |=2;if (!READ(pinB)) uid.encoderLast |=1; uid.encoderPos -= pgm_read_byte(&encoder_table[uid.encoderLast]);
+#define UI_KEYS_CLICKENCODER_LOW_REV(pinA,pinB)  uid.encoderLast = (uid.encoderLast << 2) & 0x0F;if (!READ(29)) uid.encoderLast |=2;if (!READ(30)) uid.encoderLast |=1; uid.encoderPos -= pgm_read_byte(&encoder_table[uid.encoderLast]);
 #define UI_KEYS_BUTTON_LOW(pin,action_) if(READ(pin)==0) action=action_;
 #define UI_KEYS_CLICKENCODER_HIGH(pinA,pinB)  uid.encoderLast = (uid.encoderLast << 2) & 0x0F;if (READ(pinA)) uid.encoderLast |=2;if (READ(pinB)) uid.encoderLast |=1; uid.encoderPos += pgm_read_byte(&encoder_table[uid.encoderLast]);
 #define UI_KEYS_CLICKENCODER_HIGH_REV(pinA,pinB)  uid.encoderLast = (uid.encoderLast << 2) & 0x0F;if (READ(pinA)) uid.encoderLast |=2;if (READ(pinB)) uid.encoderLast |=1; uid.encoderPos -= pgm_read_byte(&encoder_table[uid.encoderLast]);
@@ -331,6 +334,7 @@ extern const int8_t encoder_table[16] PROGMEM ;
 #define UI_MENU(name,items,itemsCnt) const UIMenuEntry * const name ## _entries[] PROGMEM = items;const UIMenu name PROGMEM = {2,0,itemsCnt,name ## _entries}
 #define UI_MENU_FILESELECT(name,items,itemsCnt) const UIMenuEntry * const name ## _entries[] PROGMEM = items;const UIMenu name PROGMEM = {1,0,itemsCnt,name ## _entries}
 
+/*
 #if FEATURE_CONTROLLER==2 || FEATURE_CONTROLLER==10 || FEATURE_CONTROLLER==11 // reprapdiscount smartcontroller has a sd card buildin
 #undef SDCARDDETECT
 #define SDCARDDETECT 49
@@ -339,6 +343,7 @@ extern const int8_t encoder_table[16] PROGMEM ;
 #undef SDSUPPORT
 #define SDSUPPORT true
 #endif
+*/
 
 // Maximum size of a row - if row is larger, text gets scrolled
 #define MAX_COLS 28
@@ -381,7 +386,7 @@ class UIDisplay {
     void createChar(uint8_t location,const uint8_t charmap[]);
     void initialize(); // Initialize display and keys
     void waitForKey();
-    void printRow(uint8_t r,char *txt,char *txt2,uint8_t changeAtCol); // Print row on display
+    void printRow(uint8_t r,char *txt,char *txt2,uint8_t changeAtCol, int8_t arrow = 0); // Print row on display
     void printRowP(uint8_t r,PGM_P txt);
     void parse(char *txt,bool ram); /// Parse output and write to printCols;
     void refreshPage();
@@ -428,6 +433,20 @@ void ui_check_slow_keys(int &action) {}
 #define UI_LCD_WIDTH 128
 #define UI_LCD_HEIGHT 64
 
+#if UI_LANGUAGE==1000
+//select font size
+#define UI_FONT_DEFAULT u8g_font_dayinhu_remix
+#define UI_FONT_WIDTH 6
+#define UI_FONT_HEIGHT 13
+#define UI_FONT_SMALL repetier_5x7
+#define UI_FONT_SMALL_WIDTH 5
+#define UI_FONT_SMALL_HEIGHT 7
+
+//calculate rows and cols available with current font
+#define UI_COLS (UI_LCD_WIDTH/UI_FONT_WIDTH)
+#define UI_ROWS ((UI_LCD_HEIGHT + 1)/UI_FONT_HEIGHT)
+#define UI_DISPLAY_CHARSET 4
+#else
 //select font size
 #define UI_FONT_6X10 //default font
 #ifdef UI_FONT_6X10
@@ -437,13 +456,16 @@ void ui_check_slow_keys(int &action) {}
 #define UI_FONT_DEFAULT repetier_6x10
 #define UI_FONT_SMALL repetier_5x7
 #define UI_FONT_SMALL_WIDTH 5 //smaller font for status display
-#define UI_ANIMATION false  // Animations are too slow
 #endif
 
 //calculate rows and cols available with current font
 #define UI_COLS (UI_LCD_WIDTH/UI_FONT_WIDTH)
 #define UI_ROWS (UI_LCD_HEIGHT/UI_FONT_HEIGHT)
 #define UI_DISPLAY_CHARSET 3
+#endif
+
+#define UI_ANIMATION false  // Animations are too slow
+
 #else
 #define UI_DISPLAY_TYPE 1
 #define UI_DISPLAY_CHARSET 1
@@ -487,22 +509,22 @@ void ui_check_slow_keys(int &action) {}
 #define UI_ENCODER_CLICK       43
 #define UI_RESET_PIN           46
 #else
-#define BEEPER_PIN             37
-#define UI_DISPLAY_RS_PIN      16
+#define BEEPER_PIN             27
+#define UI_DISPLAY_RS_PIN      28
 #define UI_DISPLAY_RW_PIN      -1
 #define UI_DISPLAY_ENABLE_PIN  17
-#define UI_DISPLAY_D0_PIN      23
-#define UI_DISPLAY_D1_PIN      25
-#define UI_DISPLAY_D2_PIN      27
-#define UI_DISPLAY_D3_PIN      29
-#define UI_DISPLAY_D4_PIN      23
-#define UI_DISPLAY_D5_PIN      25
-#define UI_DISPLAY_D6_PIN      27
-#define UI_DISPLAY_D7_PIN      29
-#define UI_ENCODER_A           33
-#define UI_ENCODER_B           31
-#define UI_ENCODER_CLICK       35
-#define UI_RESET_PIN           41
+#define UI_DISPLAY_D0_PIN      -1
+#define UI_DISPLAY_D1_PIN      -1
+#define UI_DISPLAY_D2_PIN      -1
+#define UI_DISPLAY_D3_PIN      -1
+#define UI_DISPLAY_D4_PIN      30
+#define UI_DISPLAY_D5_PIN      -1
+#define UI_DISPLAY_D6_PIN      -1
+#define UI_DISPLAY_D7_PIN      -1
+#define UI_ENCODER_A           10
+#define UI_ENCODER_B           11
+#define UI_ENCODER_CLICK       16
+#define UI_RESET_PIN           29
 #endif
 #endif
 #define UI_DELAYPERCHAR 320
@@ -510,13 +532,13 @@ void ui_check_slow_keys(int &action) {}
 #ifdef UI_MAIN
 void ui_init_keys() {
   UI_KEYS_INIT_CLICKENCODER_LOW(UI_ENCODER_A,UI_ENCODER_B); // click encoder on pins 47 and 45. Phase is connected with gnd for signals.
-  UI_KEYS_INIT_BUTTON_LOW(UI_ENCODER_CLICK); // push button, connects gnd to pin
-  UI_KEYS_INIT_BUTTON_LOW(UI_RESET_PIN); // Kill pin
+  UI_KEYS_INIT_BUTTON_LOW(28);
+  UI_KEYS_INIT_BUTTON_LOW(10);
 }
 void ui_check_keys(int &action) {
  UI_KEYS_CLICKENCODER_LOW_REV(UI_ENCODER_A,UI_ENCODER_B); // click encoder on pins 47 and 45. Phase is connected with gnd for signals.
- UI_KEYS_BUTTON_LOW(UI_ENCODER_CLICK,UI_ACTION_OK); // push button, connects gnd to pin
- UI_KEYS_BUTTON_LOW(UI_RESET_PIN,UI_ACTION_RESET);
+ UI_KEYS_BUTTON_LOW(28,UI_ACTION_OK);
+ UI_KEYS_BUTTON_LOW(10,UI_ACTION_RESET);
 }
 inline void ui_check_slow_encoder() {}
 void ui_check_slow_keys(int &action) {}
@@ -790,8 +812,11 @@ void ui_check_slow_keys(int &action) {
 #endif
 #endif // Controller 6
 #if FEATURE_CONTROLLER==7 // RADDS pin assignment for displays
+#define SDSS            10
+#define SPI_PIN         77
+#define SPI_CHAN        0
 #define UI_HAS_KEYS 1
-#define UI_HAS_BACK_KEY 0
+#define UI_HAS_BACK_KEY 1
 #define UI_DISPLAY_TYPE 1
 #define UI_DISPLAY_CHARSET 1
 #define BEEPER_TYPE 1
@@ -814,15 +839,18 @@ void ui_check_slow_keys(int &action) {
 #define UI_ENCODER_CLICK       48
 #define UI_RESET_PIN           -1
 #define UI_DELAYPERCHAR 40
-#define UI_INVERT_MENU_DIRECTION false
+#define UI_INVERT_MENU_DIRECTION 0
+#define UI_BUTTON_BACK         71
 #ifdef UI_MAIN
 void ui_init_keys() {
   UI_KEYS_INIT_CLICKENCODER_LOW(UI_ENCODER_A,UI_ENCODER_B); // click encoder on pins 47 and 45. Phase is connected with gnd for signals.
   UI_KEYS_INIT_BUTTON_LOW(UI_ENCODER_CLICK); // push button, connects gnd to pin
+  UI_KEYS_INIT_BUTTON_LOW(UI_BUTTON_BACK);
 }
 void ui_check_keys(int &action) {
  UI_KEYS_CLICKENCODER_LOW_REV(UI_ENCODER_A,UI_ENCODER_B); // click encoder on pins 47 and 45. Phase is connected with gnd for signals.
  UI_KEYS_BUTTON_LOW(UI_ENCODER_CLICK,UI_ACTION_OK); // push button, connects gnd to pin
+ UI_KEYS_BUTTON_LOW(UI_BUTTON_BACK,UI_ACTION_BACK);
 }
 inline void ui_check_slow_encoder() {}
 void ui_check_slow_keys(int &action) {}
