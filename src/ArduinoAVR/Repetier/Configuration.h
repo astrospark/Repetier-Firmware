@@ -329,7 +329,7 @@ WARNING: Servos can draw a considerable amount of current. Make sure your system
 #define FEATURE_BEEPER 1
 #define CASE_LIGHTS_PIN -1
 #define CASE_LIGHT_DEFAULT_ON 1
-#define UI_START_SCREEN_DELAY 3000
+#define UI_START_SCREEN_DELAY 1000
 /**
 Beeper sound definitions for short beeps during key actions
 and longer beeps for important actions.
